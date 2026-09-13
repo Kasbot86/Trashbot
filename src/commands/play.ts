@@ -1,5 +1,6 @@
 import { ChatInputCommandInteraction, GuildMember, SlashCommandBuilder } from 'discord.js';
 import { useMainPlayer, useQueue } from 'discord-player';
+import { releaseDiscordJsVoice } from '../utils/voiceCleanup';
 
 export default {
   data: new SlashCommandBuilder()
@@ -30,6 +31,9 @@ export default {
     await interaction.deferReply();
 
     try {
+      // Avoid fighting auto-TTS / @discordjs/voice for the same guild
+      releaseDiscordJsVoice(interaction.guildId!);
+
       const result = await player.play(voiceChannel, query, {
         nodeOptions: {
           metadata: {

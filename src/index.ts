@@ -10,6 +10,11 @@ import { YoutubeExtractor } from 'discord-player-youtubei';
 import fs from 'fs';
 import path from 'path';
 import { config } from './config';
+import ffmpegPath from 'ffmpeg-static';
+
+if (ffmpegPath) {
+  process.env.FFMPEG_PATH = ffmpegPath;
+}
 import { Command } from './types';
 
 const client = new Client({

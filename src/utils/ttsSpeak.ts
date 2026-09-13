@@ -14,6 +14,7 @@ import { getAllAudioUrls, getAudioUrl } from 'google-tts-api';
 import ffmpegPath from 'ffmpeg-static';
 import { PassThrough, Readable } from 'stream';
 import type { VoiceBasedChannel } from 'discord.js';
+import { releaseDiscordPlayerVoice } from './voiceCleanup';
 
 if (ffmpegPath) {
   process.env.FFMPEG_PATH = ffmpegPath;
@@ -95,6 +96,7 @@ async function playText(
     buffers.push(buf);
   }
 
+  releaseDiscordPlayerVoice(voiceChannel.guild.id);
   const connection = ensureConnection(voiceChannel);
   await entersState(connection, VoiceConnectionStatus.Ready, 30_000);
 
