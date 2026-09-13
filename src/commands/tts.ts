@@ -13,7 +13,7 @@ import {
   StreamType,
   VoiceConnectionStatus,
 } from '@discordjs/voice';
-import googleTTS from 'google-tts-api';
+import { getAllAudioUrls, getAudioUrl } from 'google-tts-api';
 import { Readable } from 'stream';
 
 async function fetchAudioStream(url: string): Promise<Readable> {
@@ -21,7 +21,6 @@ async function fetchAudioStream(url: string): Promise<Readable> {
   if (!response.ok || !response.body) {
     throw new Error(`Failed to fetch TTS audio (${response.status})`);
   }
-  // Convert Web ReadableStream to Node Readable
   return Readable.fromWeb(response.body as import('stream/web').ReadableStream);
 }
 
@@ -61,11 +60,20 @@ export default {
     await interaction.deferReply();
 
     try {
-      // google-tts-api splits long text into multiple URLs automatically via getAllAudioUrls
       const urls =
         text.length > 200
-          ? googleTTS.getAllAudioUrls(text, { lang: 'en', slow: false, host: 'https://translate.google.com' }).map((u) => u.url)
-          : [googleTTS.getAudioUrl(text, { lang: 'en', slow: false, host: 'https://translate.google.com' })];
+          ? getAllAudioUrls(text, {
+              lang: 'en',
+              slow: false,
+              host: 'https://translate.google.com',
+            }).map((u) => u.url)
+          : [
+              getAudioUrl(text, {
+                lang: 'en',
+                slow: false,
+                host: 'https://translate.google.com',
+              }),
+            ];
 
       let connection = getVoiceConnection(interaction.guildId!);
       if (!connection) {
@@ -84,13 +92,17 @@ export default {
 
       for (const url of urls) {
         const stream = await fetchAudioStream(url);
-        const resource = createAudioResource(stream, { inputType: StreamType.Arbitrary });
+        const resource = createAudioResource(stream, {
+          inputType: StreamType.Arbitrary,
+        });
         player.play(resource);
         await entersState(player, AudioPlayerStatus.Playing, 5_000);
         await entersState(player, AudioPlayerStatus.Idle, 120_000);
       }
 
-      await interaction.editReply(`🗣️ Spoke: "${text.length > 100 ? text.slice(0, 97) + '...' : text}"`);
+      await interaction.editReply(
+        `🗣️ Spoke: "${text.length > 100 ? text.slice(0, 97) + '...' : text}"`,
+      );
     } catch (error) {
       console.error('TTS error:', error);
       const message = error instanceof Error ? error.message : 'Unknown error';
