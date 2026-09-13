@@ -1,0 +1,45 @@
+{
+  "name": "trashbot",
+  "version": "1.0.0",
+  "description": "Discord bot with YouTube music, TTS, and AI image generation",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "deploy-commands": "tsx src/deploy-commands.ts",
+    "dev": "tsx watch src/index.ts"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "music",
+    "tts"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@discord-player/extractor": "^7.1.0",
+    "@discordjs/voice": "^0.18.0",
+    "discord-api-types": "^0.38.55",
+    "discord-player": "^7.1.0",
+    "discord-player-youtubei": "^3.1.0",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.7",
+    "ffmpeg-static": "^5.2.0",
+    "google-tts-api": "^2.0.2",
+    "opusscript": "^0.0.8",
+    "bgutils-js": "^4.0.3",
+    "googlevideo": "^4.1.1",
+    "simple-ytdl-core": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "overrides": {
+    "discord-api-types": "^0.38.55"
+  }
+}
