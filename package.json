@@ -17,11 +17,11 @@
   ],
   "license": "MIT",
   "engines": {
-    "node": ">=18"
+    "node": ">=22.12.0"
   },
   "dependencies": {
     "@discord-player/extractor": "^7.1.0",
-    "@discordjs/voice": "^0.18.0",
+    "@discordjs/voice": "^0.19.2",
     "@snazzah/davey": "^0.1.12",
     "bgutils-js": "^4.0.3",
     "discord-api-types": "^0.38.55",

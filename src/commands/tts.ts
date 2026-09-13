@@ -121,7 +121,10 @@ export default {
         });
       }
 
-      await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
+      connection.on('stateChange', (oldState, newState) => {
+        console.log(`[TTS voice] ${oldState.status} -> ${newState.status}`);
+      });
+      await entersState(connection, VoiceConnectionStatus.Ready, 30_000);
 
       const player = createAudioPlayer();
       const subscription = connection.subscribe(player);
