@@ -25,7 +25,10 @@ export default {
         },
         {
           name: '🗣️ Speech',
-          value: '`/tts text` — Speak text in your voice channel (free Google TTS)',
+          value: [
+            '`/tts text` — Speak text once in your voice channel',
+            '**Auto-TTS** — While you are in a voice channel, your normal chat messages are spoken automatically (no command)',
+          ].join('\n'),
         },
         {
           name: '🖼️ Images',
@@ -37,7 +40,7 @@ export default {
           value: '`/help` — Show this help message',
         },
       )
-      .setFooter({ text: 'Join a voice channel before using music or TTS commands.' });
+      .setFooter({ text: 'Join a voice channel for music, /tts, or auto-TTS chat.' });
 
     await interaction.reply({ embeds: [embed] });
   },
