@@ -15,7 +15,7 @@ import {
 } from '@discordjs/voice';
 import { getAllAudioUrls, getAudioUrl } from 'google-tts-api';
 import ffmpegPath from 'ffmpeg-static';
-import { Readable } from 'stream';
+import { PassThrough, Readable } from 'stream';
 
 if (ffmpegPath) {
   process.env.FFMPEG_PATH = ffmpegPath;
@@ -36,8 +36,15 @@ async function fetchMp3Buffer(url: string): Promise<Buffer> {
   return Buffer.from(await response.arrayBuffer());
 }
 
+function bufferToBinaryStream(buffer: Buffer): Readable {
+  // Readable.from(Buffer) iterates bytes as numbers (objectMode) — demuxProbe rejects that.
+  const stream = new PassThrough();
+  stream.end(buffer);
+  return stream;
+}
+
 async function createMp3Resource(buffer: Buffer) {
-  const stream = Readable.from(buffer);
+  const stream = bufferToBinaryStream(buffer);
   const { stream: probed, type } = await demuxProbe(stream);
   return createAudioResource(probed, { inputType: type });
 }
