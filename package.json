@@ -22,6 +22,8 @@
   "dependencies": {
     "@discord-player/extractor": "^7.1.0",
     "@discordjs/voice": "^0.18.0",
+    "@snazzah/davey": "^0.1.12",
+    "bgutils-js": "^4.0.3",
     "discord-api-types": "^0.38.55",
     "discord-player": "^7.1.0",
     "discord-player-youtubei": "^3.1.0",
@@ -29,9 +31,8 @@
     "dotenv": "^16.4.7",
     "ffmpeg-static": "^5.2.0",
     "google-tts-api": "^2.0.2",
-    "opusscript": "^0.0.8",
-    "bgutils-js": "^4.0.3",
     "googlevideo": "^4.1.1",
+    "opusscript": "^0.0.8",
     "simple-ytdl-core": "^1.1.1"
   },
   "devDependencies": {
