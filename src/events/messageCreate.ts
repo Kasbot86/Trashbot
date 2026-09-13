@@ -1,4 +1,5 @@
 import { Events, Message, OmitPartialGroupDMChannel } from 'discord.js';
+import { getAutoTtsChannelId } from '../utils/autoTtsConfig';
 import { enqueueSpeak } from '../utils/ttsSpeak';
 
 const MAX_LEN = 500;
@@ -8,13 +9,15 @@ function shouldAutoSpeak(message: OmitPartialGroupDMChannel<Message>): boolean {
   if (!message.guild) return false;
   if (!message.content?.trim()) return false;
 
+  const configuredChannelId = getAutoTtsChannelId(message.guild.id);
+  if (!configuredChannelId) return false;
+  if (message.channelId !== configuredChannelId) return false;
+
   const text = message.content.trim();
   if (text.length > MAX_LEN) return false;
-  // Skip slash-style / bot-prefix style lines
   if (text.startsWith('/') || text.startsWith('!') || text.startsWith('.')) {
     return false;
   }
-  // Skip pure links / mentions-only noise
   if (/^(https?:\/\/\S+|<#\d+>|<@!?\d+>|<@&\d+>)+$/i.test(text)) {
     return false;
   }

@@ -27,7 +27,10 @@ export default {
           name: '🗣️ Speech',
           value: [
             '`/tts text` — Speak text once in your voice channel',
-            '**Auto-TTS** — While you are in a voice channel, your normal chat messages are spoken automatically (no command)',
+            '`/autotts here` — Enable auto-TTS in this text channel only',
+            '`/autotts channel` — Pick a specific auto-TTS channel',
+            '`/autotts off` — Disable auto-TTS',
+            '`/autotts status` — Show the auto-TTS channel',
           ].join('\n'),
         },
         {
