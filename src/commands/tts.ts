@@ -7,21 +7,51 @@ import {
   AudioPlayerStatus,
   createAudioPlayer,
   createAudioResource,
+  demuxProbe,
   entersState,
   getVoiceConnection,
   joinVoiceChannel,
-  StreamType,
   VoiceConnectionStatus,
 } from '@discordjs/voice';
 import { getAllAudioUrls, getAudioUrl } from 'google-tts-api';
+import ffmpegPath from 'ffmpeg-static';
 import { Readable } from 'stream';
 
-async function fetchAudioStream(url: string): Promise<Readable> {
-  const response = await fetch(url);
-  if (!response.ok || !response.body) {
+if (ffmpegPath) {
+  process.env.FFMPEG_PATH = ffmpegPath;
+}
+
+async function fetchMp3Buffer(url: string): Promise<Buffer> {
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      Referer: 'https://translate.google.com/',
+      Accept: '*/*',
+    },
+  });
+  if (!response.ok) {
     throw new Error(`Failed to fetch TTS audio (${response.status})`);
   }
-  return Readable.fromWeb(response.body as import('stream/web').ReadableStream);
+  return Buffer.from(await response.arrayBuffer());
+}
+
+async function createMp3Resource(buffer: Buffer) {
+  const stream = Readable.from(buffer);
+  const { stream: probed, type } = await demuxProbe(stream);
+  return createAudioResource(probed, { inputType: type });
+}
+
+function speakTextUrls(text: string): string[] {
+  const options = {
+    lang: 'en',
+    slow: false,
+    host: 'https://translate.google.com',
+  };
+  if (text.length > 200) {
+    return getAllAudioUrls(text, options).map((u) => u.url);
+  }
+  return [getAudioUrl(text, options)];
 }
 
 export default {
@@ -60,23 +90,29 @@ export default {
     await interaction.deferReply();
 
     try {
-      const urls =
-        text.length > 200
-          ? getAllAudioUrls(text, {
-              lang: 'en',
-              slow: false,
-              host: 'https://translate.google.com',
-            }).map((u) => u.url)
-          : [
-              getAudioUrl(text, {
-                lang: 'en',
-                slow: false,
-                host: 'https://translate.google.com',
-              }),
-            ];
+      const urls = speakTextUrls(text);
+      const buffers: Buffer[] = [];
+      for (const url of urls) {
+        const buf = await fetchMp3Buffer(url);
+        if (!buf.length) {
+          throw new Error('TTS returned empty audio');
+        }
+        buffers.push(buf);
+      }
 
       let connection = getVoiceConnection(interaction.guildId!);
-      if (!connection) {
+      if (
+        !connection ||
+        connection.state.status === VoiceConnectionStatus.Destroyed
+      ) {
+        connection = joinVoiceChannel({
+          channelId: voiceChannel.id,
+          guildId: voiceChannel.guild.id,
+          adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+          selfDeaf: true,
+        });
+      } else if (connection.joinConfig.channelId !== voiceChannel.id) {
+        connection.destroy();
         connection = joinVoiceChannel({
           channelId: voiceChannel.id,
           guildId: voiceChannel.guild.id,
@@ -85,19 +121,33 @@ export default {
         });
       }
 
-      await entersState(connection, VoiceConnectionStatus.Ready, 15_000);
+      await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
 
       const player = createAudioPlayer();
-      connection.subscribe(player);
+      const subscription = connection.subscribe(player);
+      if (!subscription) {
+        throw new Error('Could not subscribe to the voice connection');
+      }
 
-      for (const url of urls) {
-        const stream = await fetchAudioStream(url);
-        const resource = createAudioResource(stream, {
-          inputType: StreamType.Arbitrary,
+      for (const buffer of buffers) {
+        const resource = await createMp3Resource(buffer);
+        await new Promise<void>((resolve, reject) => {
+          const onIdle = () => {
+            cleanup();
+            resolve();
+          };
+          const onError = (err: Error) => {
+            cleanup();
+            reject(err);
+          };
+          const cleanup = () => {
+            player.off(AudioPlayerStatus.Idle, onIdle);
+            player.off('error', onError);
+          };
+          player.once(AudioPlayerStatus.Idle, onIdle);
+          player.once('error', onError);
+          player.play(resource);
         });
-        player.play(resource);
-        await entersState(player, AudioPlayerStatus.Playing, 5_000);
-        await entersState(player, AudioPlayerStatus.Idle, 120_000);
       }
 
       await interaction.editReply(
@@ -106,7 +156,11 @@ export default {
     } catch (error) {
       console.error('TTS error:', error);
       const message = error instanceof Error ? error.message : 'Unknown error';
-      await interaction.editReply(`❌ TTS failed: ${message}`);
+      const friendly =
+        message.includes('aborted') || message.includes('Abort')
+          ? 'Voice playback timed out — try again, or leave/rejoin voice and retry.'
+          : message;
+      await interaction.editReply(`❌ TTS failed: ${friendly}`);
     }
   },
 };
